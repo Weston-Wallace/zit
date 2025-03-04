@@ -1,0 +1,15 @@
+.{
+    .name = "zit",
+    .version = "0.0.0",
+    .dependencies = .{
+        .@"zig-metal-wrapper" = .{
+            .url = "git+https://github.com/Weston-Wallace/zig-metal-wrapper#ee747ff2c810055e110a796b6ae493a8f7b1cfb6",
+            .hash = "12202efe01e24998c7665712b211fa772c9bc57528e475235873c899922418c02b13",
+        },
+    },
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+    },
+}
