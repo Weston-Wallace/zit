@@ -15,3 +15,17 @@ pub fn Tensor(comptime T: type) type {
         allocator: Allocator,
     };
 }
+
+const testing = std.testing;
+
+test "basic tensor creation" {
+    var data = [_]f32{ 0, 1, 2, 3 };
+    var shape = [_]usize{4};
+    const tensor = Tensor(f32){
+        .data = &data,
+        .shape = &shape,
+        .allocator = testing.allocator,
+    };
+
+    try testing.expect(data[0] == tensor.data[0]);
+}
