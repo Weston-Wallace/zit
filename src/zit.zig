@@ -3,10 +3,7 @@ const tensor = @import("tensor.zig");
 pub const Tensor = tensor.Tensor;
 pub const Matrix = tensor.Matrix;
 pub const Vector = tensor.Vector;
-const Elementwise = @import("operations/elementwise.zig");
-pub const ops = .{
-    .elementwise = Elementwise,
-};
+pub const ops = @import("operations/elementwise.zig");
 
 test {
     std.testing.refAllDeclsRecursive(@This());
