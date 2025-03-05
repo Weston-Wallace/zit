@@ -4,7 +4,7 @@ const tensor_module = @import("tensor.zig");
 const Tensor = tensor_module.Tensor;
 const Vector = tensor_module.Vector;
 const Matrix = tensor_module.Matrix;
-const CpuBackend = @import("backends/CpuBackend.zig");
+const CpuBackend = @import("backends/cpu/CpuBackend.zig");
 
 /// Errors that can occur during tensor operations
 pub const TensorOpError = error{

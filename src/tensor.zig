@@ -2,7 +2,7 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 const ArrayList = std.ArrayList;
 
-pub const TensorError = error{
+pub const TensorStructError = error{
     InvalidDimensions,
     OutOfBounds,
 };
@@ -49,7 +49,7 @@ pub fn Tensor(comptime T: type) type {
                 total_size *= length;
             }
             if (total_size != data.len) {
-                return TensorError.InvalidDimensions;
+                return TensorStructError.InvalidDimensions;
             }
 
             return Self{
@@ -66,7 +66,7 @@ pub fn Tensor(comptime T: type) type {
 
         pub fn getFlatIndex(self: Self, indices: []usize) !usize {
             if (indices.len != self.shape.items.len) {
-                return TensorError.InvalidDimensions;
+                return TensorStructError.InvalidDimensions;
             }
 
             var current_stride: usize = 1;
@@ -76,7 +76,7 @@ pub fn Tensor(comptime T: type) type {
                 const index = indices[backwards_dim];
                 const length = self.shape.items[backwards_dim];
                 if (index < 0 or index >= length) {
-                    return TensorError.OutOfBounds;
+                    return TensorStructError.OutOfBounds;
                 }
                 flat_index += index * current_stride;
                 current_stride *= length;
@@ -120,7 +120,7 @@ pub fn Matrix(comptime T: type) type {
         /// data must have been allocated by allocator
         pub fn fromOwnedData(data: []T, rows: usize, columns: usize, allocator: Allocator) !Self {
             if (data.len != rows * columns) {
-                return TensorError.InvalidDimensions;
+                return TensorStructError.InvalidDimensions;
             }
             return Self{
                 .rows = rows,
@@ -134,17 +134,17 @@ pub fn Matrix(comptime T: type) type {
             self.allocator.free(self.data);
         }
 
-        pub fn get(self: Self, row: usize, column: usize) TensorError!T {
+        pub fn get(self: Self, row: usize, column: usize) TensorStructError!T {
             if (row < 0 or row >= self.rows or column < 0 or column >= self.columns) {
-                return TensorError.OutOfBounds;
+                return TensorStructError.OutOfBounds;
             }
 
             return self.data[row * self.columns + column];
         }
 
-        pub fn getRow(self: Self, row: usize) TensorError![]T {
+        pub fn getRow(self: Self, row: usize) TensorStructError![]T {
             if (row < 0 or row >= self.rows) {
-                return TensorError.OutOfBounds;
+                return TensorStructError.OutOfBounds;
             }
 
             return self.data[row .. row + self.columns];
