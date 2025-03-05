@@ -26,6 +26,25 @@ pub fn ensureEqualShape(a: anytype, b: @TypeOf(a)) !void {
     }
 }
 
+pub const BinaryOpFn = @Type(@typeInfo(std.builtin.Type{ .Fn = .{
+    .calling_convention = .Unspecified,
+    .is_generic = true,
+    .is_var_args = false,
+    .params = &.{
+        .{
+            .is_generic = true,
+            .is_noalias = false,
+            .type = null,
+        },
+        .{
+            .is_generic = true,
+            .is_noalias = false,
+            .type = null,
+        },
+    },
+    .return_type = null,
+} }));
+
 const testing = std.testing;
 
 test "ensureEqualShape" {
@@ -82,4 +101,28 @@ test "ensureEqualShape" {
         // Should error for different lengths
         try testing.expectError(TensorOpError.LengthMismatch, ensureEqualShape(v1, v3));
     }
+}
+
+fn printFnInfo(func: anytype) void {
+    const fn_info = @typeInfo(@TypeOf(func)).Fn;
+    std.debug.print("calling_convention: {}\n", .{fn_info.calling_convention});
+    std.debug.print("is_generic: {}\n", .{fn_info.is_generic});
+    std.debug.print("is_var_args: {}\n", .{fn_info.is_var_args});
+    std.debug.print("return_type: {?}\n", .{fn_info.return_type});
+
+    inline for (fn_info.params, 0..) |param, i| {
+        std.debug.print("param {}\n", .{i});
+        std.debug.print("is_generic: {}\n", .{param.is_generic});
+        std.debug.print("is_noalias: {}\n", .{param.is_noalias});
+        std.debug.print("type: {?}\n", .{param.type});
+    }
+    std.debug.print("\n", .{});
+}
+
+fn add(x: anytype, y: @TypeOf(x)) @TypeOf(x) {
+    return x + y;
+}
+
+test "function info test" {
+    printFnInfo(add);
 }

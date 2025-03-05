@@ -16,7 +16,6 @@ pub const TensorOpError = error{
     InvalidType,
 };
 
-/// Backend interface that defines operations all backends must implement
 pub const Backend = union(enum) {
     cpu: CpuBackend,
 };
