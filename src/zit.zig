@@ -7,6 +7,7 @@ pub const TensorStructError = tensor.TensorStructError;
 pub const TensorContext = @import("TensorContext.zig");
 const backend = @import("backend.zig");
 pub const Backend = backend.Backend;
+pub const CpuBackend = @import("backends/cpu/CpuBackend.zig");
 pub const TensorOpError = backend.TensorOpError;
 pub const TensorError = TensorStructError || TensorOpError;
 
