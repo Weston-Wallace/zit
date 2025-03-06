@@ -24,7 +24,7 @@ pub const Backend = struct {
     pub const VTable = struct {
         // elementwise
         op: *const fn (ctx: *anyopaque, a: anytype, b: anytype, out: anytype, op_fn: fn_types.BinaryOpFn) TensorOpError!void,
-        map: *const fn (ctx: *anyopaque, a: anytype, b: anytype, out: anytype, map_fn: fn_types.MapFn) TensorOpError!void,
+        map: *const fn (ctx: *anyopaque, a: anytype, out: anytype, map_fn: fn_types.MapFn) TensorOpError!void,
         scalarMultiply: *const fn (ctx: *anyopaque, a: anytype, scalar: anytype, out: anytype) TensorOpError!void,
         // vector
         vectorDot: *const fn (ctx: *anyopaque, a: anytype, b: anytype, out: anytype) TensorOpError!void,

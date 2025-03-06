@@ -1,14 +1,20 @@
 const std = @import("std");
 const testing = std.testing;
 const zit = @import("zit");
+const TensorContext = zit.TensorContext;
+const CpuBackend = zit.CpuBackend;
 
-test "create a tensor" {
-    var data = [_]f32{ 0, 1, 2, 3 };
-    var shape = [_]usize{4};
-    const tensor = zit.Tensor(f32){
-        .items = &data,
-        .shape = &shape,
+test "matrix multiply" {
+    const ctx = TensorContext{
+        .backend = CpuBackend.backend(),
         .allocator = testing.allocator,
     };
-    try testing.expect(tensor.items[0] == 0);
+
+    const m_1 = try ctx.matrixSplat(f32, 2, 3, 1);
+    defer m_1.deinit();
+    const m_2 = try ctx.matrixSplat(f32, 3, 4, 3);
+    defer m_2.deinit();
+
+    const result = try ctx.matrixMultiply(m_1, m_2);
+    defer result.deinit();
 }

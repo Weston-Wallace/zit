@@ -15,7 +15,7 @@ const matrix_ops = @import("matrix_ops.zig");
 
 pub fn backend() Backend {
     return Backend{
-        .ptr = @ptrFromInt(0),
+        .ptr = @ptrFromInt(1),
         .vtable = .{
             .op = elementwise.op,
             .map = elementwise.map,

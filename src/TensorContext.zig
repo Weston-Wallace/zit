@@ -15,39 +15,39 @@ backend: Backend,
 allocator: Allocator,
 
 pub fn tensorInit(self: Self, comptime T: type, shape: []const usize) TensorStructError!Tensor(T) {
-    return try Tensor(T).init(shape, self.allocator);
+    return Tensor(T).init(shape, self.allocator);
 }
 
 pub fn tensorSplat(self: Self, comptime T: type, shape: []const usize, scalar: T) TensorStructError!Tensor(T) {
-    return try Tensor(T).splat(shape, scalar, self.allocator);
+    return Tensor(T).splat(shape, scalar, self.allocator);
 }
 
 pub fn tensorFromOwnedData(self: Self, data: anytype, shape: []const usize) TensorStructError!Tensor(std.meta.Child(@TypeOf(data))) {
-    return try Tensor(std.meta.Child(@TypeOf(data))).fromOwnedData(data, shape, self.allocator);
+    return Tensor(std.meta.Child(@TypeOf(data))).fromOwnedData(data, shape, self.allocator);
 }
 
-pub fn matrixInit(self: Self, comptime T: type, rows: usize, columns: usize) TensorStructError!Tensor(T) {
-    return try Matrix(T).init(rows, columns, self.allocator);
+pub fn matrixInit(self: Self, comptime T: type, rows: usize, columns: usize) TensorStructError!Matrix(T) {
+    return Matrix(T).init(rows, columns, self.allocator);
 }
 
-pub fn matrixSplat(self: Self, comptime T: type, rows: usize, columns: usize, scalar: T) TensorStructError!Tensor(T) {
-    return try Matrix(T).splat(rows, columns, scalar, self.allocator);
+pub fn matrixSplat(self: Self, comptime T: type, rows: usize, columns: usize, scalar: T) TensorStructError!Matrix(T) {
+    return Matrix(T).splat(rows, columns, scalar, self.allocator);
 }
 
-pub fn matrixFromOwnedData(self: Self, data: anytype, rows: usize, columns: usize) TensorStructError!Tensor(std.meta.Child(@TypeOf(data))) {
-    return try Matrix(std.meta.Child(@TypeOf(data))).fromOwnedData(data, rows, columns, self.allocator);
+pub fn matrixFromOwnedData(self: Self, data: anytype, rows: usize, columns: usize) TensorStructError!Matrix(std.meta.Child(@TypeOf(data))) {
+    return Matrix(std.meta.Child(@TypeOf(data))).fromOwnedData(data, rows, columns, self.allocator);
 }
 
-pub fn vectorInit(self: Self, comptime T: type, length: usize) TensorStructError!Tensor(T) {
-    return try Vector(T).init(length, self.allocator);
+pub fn vectorInit(self: Self, comptime T: type, length: usize) TensorStructError!Vector(T) {
+    return Vector(T).init(length, self.allocator);
 }
 
-pub fn vectorSplat(self: Self, comptime T: type, length: usize, scalar: T) TensorStructError!Tensor(T) {
-    return try Vector(T).splat(length, scalar, self.allocator);
+pub fn vectorSplat(self: Self, comptime T: type, length: usize, scalar: T) TensorStructError!Vector(T) {
+    return Vector(T).splat(length, scalar, self.allocator);
 }
 
-pub fn vectorFromOwnedData(self: Self, data: anytype, length: usize) TensorStructError!Tensor(std.meta.Child(@TypeOf(data))) {
-    return try Vector(std.meta.Child(@TypeOf(data))).fromOwnedData(data, length, self.allocator);
+pub fn vectorFromOwnedData(self: Self, data: anytype, length: usize) TensorStructError!Vector(std.meta.Child(@TypeOf(data))) {
+    return Vector(std.meta.Child(@TypeOf(data))).fromOwnedData(data, length, self.allocator);
 }
 
 pub const add = elementwiseOp(addOp);
