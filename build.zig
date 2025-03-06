@@ -35,3 +35,19 @@ pub fn build(b: *std.Build) void {
     integration_test_step.dependOn(&integration_test_run.step);
     test_step.dependOn(integration_test_step);
 }
+
+fn addExecutable(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.builtin.OptimizeMode, comptime name: []const u8, should_install: bool) void {
+    const exe = b.addExecutable(.{
+        .name = name,
+        .root_source_file = b.path(std.fmt.comptimePrint("src/{s}.zig", .{name})),
+        .target = target,
+        .optimize = optimize,
+    });
+
+    if (should_install) {
+        b.installArtifact(exe);
+    }
+
+    const exe_step = b.step(name, std.fmt.comptimePrint("Run {s}", .{name}));
+    exe_step.dependOn(&b.addRunArtifact(exe).step);
+}

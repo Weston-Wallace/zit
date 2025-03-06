@@ -3,7 +3,7 @@ const zit = @import("../../zit.zig");
 const Vector = zit.Vector;
 const TensorOpError = zit.TensorOpError;
 
-pub fn vectorDot(a: anytype, b: @TypeOf(a)) TensorOpError!@TypeOf(a).DataType {
+pub fn vectorDot(_: *anyopaque, a: anytype, b: @TypeOf(a), out: *@TypeOf(a).DataType) TensorOpError!void {
     const DataType = @TypeOf(a).DataType;
     if (@TypeOf(a) != Vector(DataType)) {
         @compileError("a and b must be Vectors");
@@ -20,10 +20,10 @@ pub fn vectorDot(a: anytype, b: @TypeOf(a)) TensorOpError!@TypeOf(a).DataType {
         result += a_val * b_val;
     }
 
-    return result;
+    out.* = result;
 }
 
-pub fn vectorNorm(v: anytype) TensorOpError!@TypeOf(v).DataType {
+pub fn vectorNorm(_: *anyopaque, v: anytype, out: *@TypeOf(v).DataType) TensorOpError!void {
     const DataType = @TypeOf(v).DataType;
     if (@TypeOf(v) != Vector(DataType)) {
         @compileError("v must be a Vector");
@@ -35,12 +35,16 @@ pub fn vectorNorm(v: anytype) TensorOpError!@TypeOf(v).DataType {
         sum_sq += val * val;
     }
 
-    return @sqrt(sum_sq);
+    out.* = @sqrt(sum_sq);
 }
 
 const testing = std.testing;
 
-test "vectorDot" {
+fn emptyCtx() *anyopaque {
+    return @ptrFromInt(0);
+}
+
+test vectorDot {
     // Initialize vectors with specific values
     const v1 = try Vector(f32).init(3, testing.allocator);
     defer v1.deinit();
@@ -54,18 +58,19 @@ test "vectorDot" {
     v2.data[1] = 5.0;
     v2.data[2] = 6.0;
 
-    const result = try vectorDot(v1, v2);
+    var result: f32 = undefined;
+    try vectorDot(emptyCtx(), v1, v2, &result);
     // Expected: 1*4 + 2*5 + 3*6 = 4 + 10 + 18 = 32
-    try testing.expectEqual(@as(f32, 32.0), result);
+    try testing.expectEqual(32.0, result);
 
     // Test error case: vectors of different lengths
     const v3 = try Vector(f32).init(4, testing.allocator);
     defer v3.deinit();
 
-    try testing.expectError(TensorOpError.LengthMismatch, vectorDot(v1, v3));
+    try testing.expectError(TensorOpError.LengthMismatch, vectorDot(emptyCtx(), v1, v3, &result));
 }
 
-test "vectorNorm" {
+test vectorNorm {
     // Initialize vector with specific values
     const v = try Vector(f32).init(3, testing.allocator);
     defer v.deinit();
@@ -73,16 +78,17 @@ test "vectorNorm" {
     v.data[1] = 4.0;
     v.data[2] = 0.0;
 
-    const result = try vectorNorm(v);
+    var result: f32 = undefined;
+    try vectorNorm(v, &result);
     // Expected: sqrt(3^2 + 4^2 + 0^2) = sqrt(9 + 16) = sqrt(25) = 5
-    try testing.expectEqual(@as(f32, 5.0), result);
+    try testing.expectEqual(5.0, result);
 
     // Test with zero vector
     const zero_v = try Vector(f32).splat(3, 0.0, testing.allocator);
     defer zero_v.deinit();
 
-    const zero_result = try vectorNorm(zero_v);
-    try testing.expectEqual(@as(f32, 0.0), zero_result);
+    try vectorNorm(emptyCtx(), zero_v, &result);
+    try testing.expectEqual(0.0, result);
 
     // Test with negative values
     const neg_v = try Vector(f32).init(2, testing.allocator);
@@ -90,9 +96,9 @@ test "vectorNorm" {
     neg_v.data[0] = -3.0;
     neg_v.data[1] = 4.0;
 
-    const neg_result = try vectorNorm(neg_v);
+    try vectorNorm(emptyCtx(), neg_v, &result);
     // Expected: sqrt((-3)^2 + 4^2) = sqrt(9 + 16) = sqrt(25) = 5
-    try testing.expectEqual(@as(f32, 5.0), neg_result);
+    try testing.expectEqual(5.0, result);
 }
 
 test "edge cases" {
@@ -101,7 +107,9 @@ test "edge cases" {
     defer empty_v.deinit();
 
     // Vector norm of empty vector should be 0
-    try testing.expectEqual(@as(f32, 0.0), try vectorNorm(empty_v));
+    var result: f32 = undefined;
+    try vectorNorm(emptyCtx(), empty_v, &result);
+    try testing.expectEqual(0.0, result);
 }
 
 test "boundary values" {
@@ -119,12 +127,13 @@ test "boundary values" {
     small_v.data[2] = std.math.floatMin(f32) * 4.0;
 
     // Test vector norm with large values
-    const large_norm = try vectorNorm(large_v);
-    try testing.expect(large_norm > 0);
-    try testing.expect(!std.math.isNan(large_norm));
+    var result: f32 = undefined;
+    try vectorNorm(emptyCtx(), large_v, &result);
+    try testing.expect(result > 0);
+    try testing.expect(!std.math.isNan(result));
 
     // Test vector norm with small values
-    const small_norm = try vectorNorm(small_v);
-    try testing.expect(small_norm >= 0);
-    try testing.expect(!std.math.isNan(small_norm));
+    try vectorNorm(emptyCtx(), small_v, &result);
+    try testing.expect(result >= 0);
+    try testing.expect(!std.math.isNan(result));
 }

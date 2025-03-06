@@ -1,12 +1,10 @@
 const std = @import("std");
-const Allocator = std.mem.Allocator;
 const zit = @import("../../zit.zig");
 const Matrix = zit.Matrix;
 const Vector = zit.Vector;
-const TensorError = zit.TensorError;
 const TensorOpError = zit.TensorOpError;
 
-pub fn matrixVectorMultiply(m: anytype, v: anytype, allocator: Allocator) TensorError!@TypeOf(v) {
+pub fn matrixVectorMultiply(_: *anyopaque, m: anytype, v: anytype, out: *@TypeOf(v)) TensorOpError!void {
     const MType = @TypeOf(m);
     const VType = @TypeOf(v);
     if (MType != Matrix(MType.DataType)) {
@@ -18,32 +16,33 @@ pub fn matrixVectorMultiply(m: anytype, v: anytype, allocator: Allocator) Tensor
     if (MType.DataType != VType.DataType) {
         @compileError("m and v must have the same underlying data types");
     }
-    const DataType = MType.DataType;
 
     // Ensure matrix columns match vector length
     if (m.columns != v.data.len) {
         return TensorOpError.ShapeMismatch;
     }
+    if (m.rows != out.data.len) {
+        return TensorOpError.ShapeMismatch;
+    }
 
-    const result_data = try allocator.alloc(DataType, m.rows);
-    errdefer allocator.free(result_data);
-
-    @memset(result_data, 0);
+    @memset(out.data, 0);
 
     // Compute M * v
     for (0..m.rows) |i| {
         for (0..m.columns) |j| {
             const m_idx = i * m.columns + j;
-            result_data[i] += m.data[m_idx] * v.data[j];
+            out.data[i] += m.data[m_idx] * v.data[j];
         }
     }
-
-    return try Vector(DataType).fromOwnedData(result_data, allocator);
 }
 
 const testing = std.testing;
 
-test "matrixVectorMultiply" {
+fn emptyCtx() *anyopaque {
+    return @ptrFromInt(0);
+}
+
+test matrixVectorMultiply {
     // Create and initialize a 2x3 matrix
     const m = try Matrix(f32).init(2, 3, testing.allocator);
     defer m.deinit();
@@ -61,19 +60,21 @@ test "matrixVectorMultiply" {
     v.data[1] = 8.0;
     v.data[2] = 9.0;
 
-    // Multiply matrix by vector
-    const result = try matrixVectorMultiply(m, v, testing.allocator);
+    var result = try Vector(f32).init(m.rows, testing.allocator);
     defer result.deinit();
 
+    // Multiply matrix by vector
+    try matrixVectorMultiply(emptyCtx(), m, v, &result);
+
     // Expected: [1*7 + 2*8 + 3*9, 4*7 + 5*8 + 6*9] = [50, 122]
-    try testing.expectEqual(@as(f32, 50.0), result.data[0]);
-    try testing.expectEqual(@as(f32, 122.0), result.data[1]);
+    try testing.expectEqual(50.0, result.data[0]);
+    try testing.expectEqual(122.0, result.data[1]);
 
     // Test shape mismatch error
     const wrong_v = try Vector(f32).init(4, testing.allocator);
     defer wrong_v.deinit();
 
-    try testing.expectError(TensorOpError.ShapeMismatch, matrixVectorMultiply(m, wrong_v, testing.allocator));
+    try testing.expectError(TensorOpError.ShapeMismatch, matrixVectorMultiply(emptyCtx(), m, wrong_v, &result));
 }
 
 test "shape validation" {
@@ -81,10 +82,20 @@ test "shape validation" {
     const m1 = try Matrix(f32).splat(2, 3, 1.0, testing.allocator);
     defer m1.deinit();
 
+    const correct_v = try Vector(f32).splat(3, 1.0, testing.allocator);
+    defer correct_v.deinit();
+
     // Create a vector with length not matching matrix columns
-    const v = try Vector(f32).splat(4, 1.0, testing.allocator);
-    defer v.deinit();
+    const wrong_v = try Vector(f32).splat(4, 1.0, testing.allocator);
+    defer wrong_v.deinit();
+
+    var correct_result = try Vector(f32).init(2, testing.allocator);
+    defer correct_result.deinit();
+
+    var wrong_result = try Vector(f32).init(3, testing.allocator);
+    defer wrong_result.deinit();
 
     // Matrix-vector multiplication should fail (columns ≠ vector length)
-    try testing.expectError(TensorOpError.ShapeMismatch, matrixVectorMultiply(m1, v, testing.allocator));
+    try testing.expectError(TensorOpError.ShapeMismatch, matrixVectorMultiply(emptyCtx(), m1, wrong_v, &correct_result));
+    try testing.expectError(TensorOpError.ShapeMismatch, matrixVectorMultiply(emptyCtx(), m1, correct_v, &wrong_result));
 }

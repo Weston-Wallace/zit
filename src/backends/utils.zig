@@ -1,12 +1,14 @@
 const std = @import("std");
+const Allocator = std.mem.Allocator;
 const zit = @import("../zit.zig");
 const Tensor = zit.Tensor;
 const Matrix = zit.Matrix;
 const Vector = zit.Vector;
 const TensorOpError = zit.TensorOpError;
+const TensorStructError = zit.TensorStructError;
 
 // Utility function to check if shapes are equal
-pub fn ensureEqualShape(a: anytype, b: @TypeOf(a)) !void {
+pub fn ensureEqualShape(a: anytype, b: @TypeOf(a)) TensorOpError!void {
     const T = @TypeOf(a);
     const DataType = T.DataType;
     if (T == Tensor(DataType)) {
@@ -26,11 +28,19 @@ pub fn ensureEqualShape(a: anytype, b: @TypeOf(a)) !void {
     }
 }
 
-fn exampleOpFn(x: anytype, y: @TypeOf(x)) @TypeOf(x) {
-    return x + y;
-}
+// Helper function to create a matching tensor type
+pub fn createMatchingTensor(source: anytype, allocator: Allocator) TensorStructError!@TypeOf(source) {
+    const T = @TypeOf(source);
+    const DataType = T.DataType;
 
-pub const BinaryOpFn = @TypeOf(exampleOpFn);
+    if (T == Vector(DataType)) {
+        return Vector(DataType).init(source.data.len, allocator);
+    } else if (T == Matrix(DataType)) {
+        return Matrix(DataType).init(source.rows, source.columns, allocator);
+    } else {
+        return Tensor(DataType).init(source.shape.items, allocator);
+    }
+}
 
 const testing = std.testing;
 

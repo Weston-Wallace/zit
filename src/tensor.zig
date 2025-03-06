@@ -5,6 +5,7 @@ const ArrayList = std.ArrayList;
 pub const TensorStructError = error{
     InvalidDimensions,
     OutOfBounds,
+    OutOfMemory,
 };
 
 pub fn Tensor(comptime T: type) type {
@@ -18,7 +19,7 @@ pub fn Tensor(comptime T: type) type {
         shape: ArrayList(usize),
         allocator: Allocator,
 
-        pub fn init(shape: []const usize, allocator: Allocator) !Self {
+        pub fn init(shape: []const usize, allocator: Allocator) TensorStructError!Self {
             const owned_shape = try allocator.dupe(usize, shape);
 
             var total_size: usize = 1;
@@ -34,14 +35,14 @@ pub fn Tensor(comptime T: type) type {
             };
         }
 
-        pub fn splat(shape: []const usize, scalar: T, allocator: Allocator) !Self {
+        pub fn splat(shape: []const usize, scalar: T, allocator: Allocator) TensorStructError!Self {
             const t = try init(shape, allocator);
             @memset(t.data, scalar);
             return t;
         }
 
         /// data must be initialized with the passed in allocator
-        pub fn fromOwnedData(data: []T, shape: []const usize, allocator: Allocator) !Self {
+        pub fn fromOwnedData(data: []T, shape: []const usize, allocator: Allocator) TensorStructError!Self {
             const owned_shape = try allocator.dupe(usize, shape);
 
             var total_size: usize = 1;
@@ -64,7 +65,7 @@ pub fn Tensor(comptime T: type) type {
             self.shape.deinit();
         }
 
-        pub fn getFlatIndex(self: Self, indices: []usize) !usize {
+        pub fn getFlatIndex(self: Self, indices: []usize) TensorStructError!usize {
             if (indices.len != self.shape.items.len) {
                 return TensorStructError.InvalidDimensions;
             }
@@ -84,7 +85,7 @@ pub fn Tensor(comptime T: type) type {
             return flat_index;
         }
 
-        pub fn get(self: Self, indices: []usize) !usize {
+        pub fn get(self: Self, indices: []usize) TensorStructError!usize {
             return self.data[try getFlatIndex(self, indices)];
         }
     };
@@ -102,7 +103,7 @@ pub fn Matrix(comptime T: type) type {
         data: []T,
         allocator: Allocator,
 
-        pub fn init(rows: usize, columns: usize, allocator: Allocator) !Self {
+        pub fn init(rows: usize, columns: usize, allocator: Allocator) TensorStructError!Self {
             return Self{
                 .rows = rows,
                 .columns = columns,
@@ -111,14 +112,14 @@ pub fn Matrix(comptime T: type) type {
             };
         }
 
-        pub fn splat(rows: usize, columns: usize, scalar: T, allocator: Allocator) !Self {
+        pub fn splat(rows: usize, columns: usize, scalar: T, allocator: Allocator) TensorStructError!Self {
             const m = try init(rows, columns, allocator);
             @memset(m.data, scalar);
             return m;
         }
 
         /// data must have been allocated by allocator
-        pub fn fromOwnedData(data: []T, rows: usize, columns: usize, allocator: Allocator) !Self {
+        pub fn fromOwnedData(data: []T, rows: usize, columns: usize, allocator: Allocator) TensorStructError!Self {
             if (data.len != rows * columns) {
                 return TensorStructError.InvalidDimensions;
             }
@@ -162,20 +163,20 @@ pub fn Vector(comptime T: type) type {
         data: []T,
         allocator: Allocator,
 
-        pub fn init(length: usize, allocator: Allocator) !Self {
+        pub fn init(length: usize, allocator: Allocator) TensorStructError!Self {
             return Self{
                 .data = try allocator.alloc(T, length),
                 .allocator = allocator,
             };
         }
 
-        pub fn splat(length: usize, scalar: T, allocator: Allocator) !Self {
+        pub fn splat(length: usize, scalar: T, allocator: Allocator) TensorStructError!Self {
             const v = try init(length, allocator);
             @memset(v.data, scalar);
             return v;
         }
 
-        pub fn fromOwnedData(data: []T, allocator: Allocator) !Self {
+        pub fn fromOwnedData(data: []T, allocator: Allocator) TensorStructError!Self {
             return Self{
                 .data = data,
                 .allocator = allocator,

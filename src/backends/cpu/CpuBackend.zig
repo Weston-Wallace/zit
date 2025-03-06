@@ -6,20 +6,25 @@ const Matrix = zit.Matrix;
 const Vector = zit.Vector;
 const TensorError = zit.TensorError;
 const TensorOpError = zit.TensorOpError;
-const utils = @import("../utils.zig");
+const Backend = @import("../../backend.zig").Backend;
 
 const elementwise = @import("elementwise.zig");
 const vector_ops = @import("vector_ops.zig");
 const matrix_vector_ops = @import("matrix_vector_ops.zig");
 const matrix_ops = @import("matrix_ops.zig");
 
-pub const opWithOut = elementwise.opWithOut;
-pub const scalarMultiplyWithOut = elementwise.scalarMultiplyWithOut;
-
-pub const vectorDot = vector_ops.vectorDot;
-pub const vectorNorm = vector_ops.vectorNorm;
-
-pub const matrixVectorMultiply = matrix_vector_ops.matrixVectorMultiply;
-
-pub const matrixMultiply = matrix_ops.matrixMultiply;
-pub const matrixTranspose = matrix_ops.matrixTranspose;
+pub fn backend() Backend {
+    return Backend{
+        .ptr = @ptrFromInt(0),
+        .vtable = .{
+            .op = elementwise.op,
+            .map = elementwise.map,
+            .scalarMultiply = elementwise.scalarMultiply,
+            .vectorDot = vector_ops.vectorDot,
+            .vectorNorm = vector_ops.vectorNorm,
+            .matrixVectorMultiply = matrix_vector_ops.matrixVectorMultiply,
+            .matrixMultiply = matrix_ops.matrixMultiply,
+            .matrixTranspose = matrix_ops.matrixTranspose,
+        },
+    };
+}

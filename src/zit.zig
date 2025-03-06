@@ -10,6 +10,7 @@ pub const Backend = backend.Backend;
 pub const CpuBackend = @import("backends/cpu/CpuBackend.zig");
 pub const TensorOpError = backend.TensorOpError;
 pub const TensorError = TensorStructError || TensorOpError;
+pub const fn_types = @import("fn_types.zig");
 
 test {
     std.testing.refAllDeclsRecursive(@This());
