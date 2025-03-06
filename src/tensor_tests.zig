@@ -3,6 +3,7 @@ const testing = std.testing;
 const zit = @import("zit");
 const TensorContext = zit.TensorContext;
 const CpuBackend = zit.CpuBackend;
+const SimdBackend = zit.SimdBackend;
 
 test "matrix multiply" {
     const ctx = TensorContext{

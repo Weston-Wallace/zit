@@ -8,6 +8,7 @@ pub const TensorContext = @import("TensorContext.zig");
 const backend = @import("backend.zig");
 pub const Backend = backend.Backend;
 pub const CpuBackend = @import("backends/cpu/CpuBackend.zig");
+pub const SimdBackend = @import("backends/simd/SimdBackend.zig");
 pub const TensorOpError = backend.TensorOpError;
 pub const TensorError = TensorStructError || TensorOpError;
 pub const fn_types = @import("fn_types.zig");

@@ -34,9 +34,25 @@ pub fn build(b: *std.Build) void {
     const integration_test_step = b.step("integration_test", "Run integration tests");
     integration_test_step.dependOn(&integration_test_run.step);
     test_step.dependOn(integration_test_step);
+
+    addExecutable(
+        b,
+        target,
+        optimize,
+        "performance_comparisons",
+        false,
+        zit,
+    );
 }
 
-fn addExecutable(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.builtin.OptimizeMode, comptime name: []const u8, should_install: bool) void {
+fn addExecutable(
+    b: *std.Build,
+    target: std.Build.ResolvedTarget,
+    optimize: std.builtin.OptimizeMode,
+    comptime name: []const u8,
+    should_install: bool,
+    module: ?*std.Build.Module,
+) void {
     const exe = b.addExecutable(.{
         .name = name,
         .root_source_file = b.path(std.fmt.comptimePrint("src/{s}.zig", .{name})),
@@ -46,6 +62,10 @@ fn addExecutable(b: *std.Build, target: std.Build.ResolvedTarget, optimize: std.
 
     if (should_install) {
         b.installArtifact(exe);
+    }
+
+    if (module) |mod| {
+        exe.root_module.addImport("zit", mod);
     }
 
     const exe_step = b.step(name, std.fmt.comptimePrint("Run {s}", .{name}));
