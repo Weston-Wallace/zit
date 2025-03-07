@@ -190,3 +190,14 @@ fn elementwiseOpWithOut(op_fn: fn_types.BinaryOpFn) @TypeOf(exampleElementwiseOp
 }
 
 const Self = @This();
+const CpuBackend = @import("backends/cpu/CpuBackend.zig");
+
+test "tensor context" {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const alloc = gpa.allocator();
+    const cpu_ctx = Self{
+        .backend = CpuBackend.backend,
+        .allocator = alloc,
+    };
+    std.debug.print("{s}\n", .{@typeName(@TypeOf(cpu_ctx.allocator))});
+}

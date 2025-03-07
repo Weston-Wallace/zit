@@ -30,7 +30,7 @@ pub fn matrixMultiply(_: *anyopaque, a: anytype, b: @TypeOf(a), out: *@TypeOf(a)
             const a_val_vec: @Vector(chunk_size, f32) = @splat(a_val);
 
             // Process inner loop in chunks
-            const chunk_count = n.columns / chunk_size;
+            const chunk_count = n / chunk_size;
 
             var result_arr: [chunk_size]f32 = undefined;
             for (0..chunk_count) |chunk| {
@@ -82,7 +82,7 @@ pub fn matrixTranspose(_: *anyopaque, m: anytype, out: *@TypeOf(m)) TensorOpErro
 const testing = std.testing;
 
 fn emptyCtx() *anyopaque {
-    return @ptrFromInt(0);
+    return @ptrFromInt(1);
 }
 
 test matrixMultiply {

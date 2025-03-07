@@ -45,7 +45,7 @@ fn add(x: anytype, y: @TypeOf(x)) @TypeOf(x) {
 }
 
 fn emptyCtx() *anyopaque {
-    return @ptrFromInt(0);
+    return @ptrFromInt(1);
 }
 
 test op {

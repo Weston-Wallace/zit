@@ -41,7 +41,7 @@ pub fn vectorNorm(_: *anyopaque, v: anytype, out: *@TypeOf(v).DataType) TensorOp
 const testing = std.testing;
 
 fn emptyCtx() *anyopaque {
-    return @ptrFromInt(0);
+    return @ptrFromInt(1);
 }
 
 test vectorDot {
@@ -79,7 +79,7 @@ test vectorNorm {
     v.data[2] = 0.0;
 
     var result: f32 = undefined;
-    try vectorNorm(v, &result);
+    try vectorNorm(emptyCtx(), v, &result);
     // Expected: sqrt(3^2 + 4^2 + 0^2) = sqrt(9 + 16) = sqrt(25) = 5
     try testing.expectEqual(5.0, result);
 

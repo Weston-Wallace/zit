@@ -39,7 +39,7 @@ pub fn matrixVectorMultiply(_: *anyopaque, m: anytype, v: anytype, out: *@TypeOf
 const testing = std.testing;
 
 fn emptyCtx() *anyopaque {
-    return @ptrFromInt(0);
+    return @ptrFromInt(1);
 }
 
 test matrixVectorMultiply {

@@ -57,7 +57,7 @@ pub fn matrixTranspose(_: *anyopaque, m: anytype, out: *@TypeOf(m)) TensorOpErro
 const testing = std.testing;
 
 fn emptyCtx() *anyopaque {
-    return @ptrFromInt(0);
+    return @ptrFromInt(1);
 }
 
 test matrixMultiply {

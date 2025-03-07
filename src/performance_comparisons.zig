@@ -167,18 +167,18 @@ pub fn compareFunctions(
     }
 }
 
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-const allocator = gpa.allocator();
-const cpu_ctx = TensorContext{
-    .backend = CpuBackend.backend(),
-    .allocator = allocator,
-};
-const simd_ctx = TensorContext{
-    .backend = SimdBackend.backend(),
-    .allocator = allocator,
-};
-
 pub fn main() !void {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const alloc = gpa.allocator();
+    const cpu_ctx = TensorContext{
+        .backend = CpuBackend.backend,
+        .allocator = alloc,
+    };
+    const simd_ctx = TensorContext{
+        .backend = SimdBackend.backend,
+        .allocator = alloc,
+    };
+
     const m_1 = try cpu_ctx.matrixSplat(f32, 1000, 2000, 15);
     const m_2 = try cpu_ctx.matrixSplat(f32, 2000, 3000, 8);
     var result = try cpu_ctx.matrixInit(f32, 1000, 3000);
@@ -190,8 +190,8 @@ pub fn main() !void {
     };
 
     try compareFunctions(
-        cpu_ctx.matrixMultiplyWithOut,
-        simd_ctx.matrixMultiplyWithOut,
+        @TypeOf(TensorContext.matrixMultiplyWithOut),
+        @TypeOf(TensorContext.matrixMultiplyWithOut),
         "cpu matrix multiply",
         "simd matrix multiply",
         cpu_ctx.matrixMultiplyWithOut,

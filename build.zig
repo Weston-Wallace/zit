@@ -43,6 +43,15 @@ pub fn build(b: *std.Build) void {
         false,
         zit,
     );
+
+    addExecutable(
+        b,
+        target,
+        optimize,
+        "foo",
+        false,
+        null,
+    );
 }
 
 fn addExecutable(
