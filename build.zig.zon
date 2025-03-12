@@ -1,10 +1,15 @@
 .{
-    .name = "zit",
+    .fingerprint = 0x4570515faa500291,
+    .name = .zit,
     .version = "0.0.0",
     .dependencies = .{
-        .@"zig-metal-wrapper" = .{
-            .url = "git+https://github.com/Weston-Wallace/zig-metal-wrapper#ee747ff2c810055e110a796b6ae493a8f7b1cfb6",
-            .hash = "12202efe01e24998c7665712b211fa772c9bc57528e475235873c899922418c02b13",
+        .zmw = .{
+            .url = "git+https://github.com/Weston-Wallace/zig-metal-wrapper#364ac3df28b12b38935a12335c2bd7a6ef9328df",
+            .hash = "zmw-0.1.1-WTH98N4GAQAGCyFq0Xr7E4kGoxuQTHn-6eM0kUv52PAU",
+        },
+        .zbench = .{
+            .url = "git+https://github.com/hendriknielaender/zBench#fb3c3bb04070b6d7fcc0b9a27d6e89d45b1141c6",
+            .hash = "zbench-0.9.2-AAAAAKroAAAlttpa4A4DtAEcB6K0oPrrfVmC29aaDLyl",
         },
     },
     .paths = .{

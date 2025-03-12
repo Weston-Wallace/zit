@@ -1,5 +1,6 @@
 const std = @import("std");
 const zit = @import("zit");
+const zbench = @import("zbench");
 const TensorContext = zit.TensorContext;
 const CpuBackend = zit.CpuBackend;
 const SimdBackend = zit.SimdBackend;
@@ -57,26 +58,16 @@ pub fn benchmark(
 ) !BenchmarkResult {
     // Validate that Function is a function type
     comptime {
-        if (@typeInfo(Function) != .Fn) {
+        if (@typeInfo(Function) != .@"fn") {
             @compileError("Expected function type, got " ++ @typeName(Function));
         }
     }
 
-    // Type check the function to ensure it's callable with no arguments
-    const ReturnType = @typeInfo(Function).Fn.return_type orelse void;
-
     var timer = try std.time.Timer.start();
 
-    // Warmup runs to eliminate JIT/cache effects
+    // Warmup runs to eliminate cache effects
     for (0..config.warmup_iterations) |_| {
-        const result = @call(.auto, func, args);
-        // Prevent compiler from optimizing away the function call
-        if (@typeInfo(ReturnType) != .Void) {
-            // Add some volatile operation to prevent the compiler from
-            // optimizing away the function call
-            const volatile_ptr: *volatile ReturnType = @ptrFromInt(@intFromPtr(&result));
-            _ = volatile_ptr.*;
-        }
+        std.mem.doNotOptimizeAway(@call(.auto, func, args));
     }
 
     // Benchmarking runs
@@ -85,15 +76,8 @@ pub fn benchmark(
 
     for (0..config.iterations) |_| {
         timer.reset();
-        const result = @call(.auto, func, args);
+        std.mem.doNotOptimizeAway(@call(.auto, func, args));
         const elapsed = timer.read();
-
-        // Prevent compiler from optimizing away the function call
-        if (@typeInfo(ReturnType) != .Void) {
-            const volatile_ptr: *volatile ReturnType = @ptrFromInt(@intFromPtr(&result));
-            _ = volatile_ptr.*;
-        }
-
         try times.append(elapsed);
     }
 
@@ -167,37 +151,73 @@ pub fn compareFunctions(
     }
 }
 
+var gpa = std.heap.DebugAllocator(.{}).init;
+const allocator = gpa.allocator();
+
+var benchmark_data: BenchmarkData = undefined;
+
+fn beforeAll() void {
+    benchmark_data = .{
+        .m1 = Matrix(f32).splat(100, 200, 7, allocator) catch unreachable,
+        .m2 = Matrix(f32).splat(200, 300, 7, allocator) catch unreachable,
+        .result = Matrix(f32).init(100, 300, allocator) catch unreachable,
+    };
+}
+
+fn afterAll() void {
+    benchmark_data.m1.deinit();
+    benchmark_data.m2.deinit();
+    benchmark_data.result.deinit();
+}
+
+const BenchmarkData = struct {
+    m1: Matrix(f32),
+    m2: Matrix(f32),
+    result: Matrix(f32),
+};
+
+pub fn MatMulBench(backend: zit.Backend) type {
+    return struct {
+        const Self = @This();
+        const ctx = TensorContext(backend){
+            .allocator = allocator,
+        };
+
+        pub const init = Self{};
+
+        pub fn run(_: Self, _: std.mem.Allocator) void {
+            std.mem.doNotOptimizeAway(ctx.matrixMultiplyWithOut(benchmark_data.m1, benchmark_data.m2, &benchmark_data.result));
+        }
+    };
+}
+
 pub fn main() !void {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    const alloc = gpa.allocator();
-    const cpu_ctx = TensorContext{
-        .backend = CpuBackend.backend,
-        .allocator = alloc,
-    };
-    const simd_ctx = TensorContext{
-        .backend = SimdBackend.backend,
-        .allocator = alloc,
-    };
+    // var gpa = std.heap.DebugAllocator(.{}).init;
+    // const allocator = gpa.allocator();
+    const stdout = std.io.getStdOut().writer();
+    var bench = zbench.Benchmark.init(std.heap.page_allocator, .{
+        .hooks = .{
+            .before_all = beforeAll,
+            .after_all = afterAll,
+        },
+    });
+    defer bench.deinit();
 
-    const m_1 = try cpu_ctx.matrixSplat(f32, 1000, 2000, 15);
-    const m_2 = try cpu_ctx.matrixSplat(f32, 2000, 3000, 8);
-    var result = try cpu_ctx.matrixInit(f32, 1000, 3000);
+    try bench.addParam("Cpu", &MatMulBench(CpuBackend.backend).init, .{});
+    try bench.addParam("Simd", &MatMulBench(SimdBackend.backend).init, .{});
 
-    const config = BenchmarkConfig{
-        .warmup_iterations = 1000,
-        .iterations = 100000,
-        .print_results = true,
-    };
+    try stdout.writeAll("testing\n");
+    try bench.run(stdout);
 
-    try compareFunctions(
-        @TypeOf(TensorContext.matrixMultiplyWithOut),
-        @TypeOf(TensorContext.matrixMultiplyWithOut),
-        "cpu matrix multiply",
-        "simd matrix multiply",
-        cpu_ctx.matrixMultiplyWithOut,
-        simd_ctx.matrixMultiplyWithOut,
-        .{ cpu_ctx, m_1, m_2, &result },
-        .{ simd_ctx, m_1, m_2, &result },
-        config,
-    );
+    // try compareFunctions(
+    //     @TypeOf(CpuCtx.matrixMultiplyWithOut),
+    //     @TypeOf(SimdCtx.matrixMultiplyWithOut),
+    //     "cpu matrix multiply",
+    //     "simd matrix multiply",
+    //     CpuCtx.matrixMultiplyWithOut,
+    //     SimdCtx.matrixMultiplyWithOut,
+    //     .{ cpu_ctx, m_1, m_2, &result },
+    //     .{ simd_ctx, m_1, m_2, &result },
+    //     config,
+    // );
 }

@@ -191,8 +191,8 @@ pub fn Vector(comptime T: type) type {
 
 fn ensureNumericType(comptime T: type) void {
     switch (@typeInfo(T)) {
-        .Int => {},
-        .Float => {},
+        .int => {},
+        .float => {},
         else => {
             @compileError("T must be a numeric type (int or float)");
         },
