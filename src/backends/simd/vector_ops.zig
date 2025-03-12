@@ -2,6 +2,7 @@ const std = @import("std");
 const zit = @import("../../zit.zig");
 const Vector = zit.Vector;
 const TensorOpError = zit.TensorOpError;
+const chunk_size = @import("SimdBackend.zig").chunk_size;
 
 pub fn vectorDot(_: *anyopaque, a: anytype, b: @TypeOf(a), out: *@TypeOf(a).DataType) TensorOpError!void {
     const DataType = @TypeOf(a).DataType;
@@ -16,8 +17,37 @@ pub fn vectorDot(_: *anyopaque, a: anytype, b: @TypeOf(a), out: *@TypeOf(a).Data
 
     var result: DataType = 0;
 
-    for (a.data, b.data) |a_val, b_val| {
-        result += a_val * b_val;
+    // Use SIMD if there's enough data
+    if (a.data.len >= chunk_size) {
+        var partial_sums: @Vector(chunk_size, DataType) = @splat(0);
+
+        // Process chunks of 8 elements
+        const chunk_count = a.data.len / chunk_size;
+
+        for (0..chunk_count) |chunk| {
+            const offset = chunk * chunk_size;
+            const a_chunk: @Vector(chunk_size, DataType) = a.data[offset..][0..chunk_size].*;
+            const b_chunk: @Vector(chunk_size, DataType) = b.data[offset..][0..chunk_size].*;
+
+            // Multiply corresponding elements and accumulate
+            partial_sums += a_chunk * b_chunk;
+        }
+
+        // Sum the elements of the partial_sums vector
+        for (0..chunk_size) |j| {
+            result += partial_sums[j];
+        }
+
+        // Handle remaining elements
+        var i = chunk_count * chunk_size;
+        while (i < a.data.len) : (i += 1) {
+            result += a.data[i] * b.data[i];
+        }
+    } else {
+        // Fall back to scalar implementation
+        for (a.data, b.data) |a_val, b_val| {
+            result += a_val * b_val;
+        }
     }
 
     out.* = result;
@@ -31,8 +61,36 @@ pub fn vectorNorm(_: *anyopaque, v: anytype, out: *@TypeOf(v).DataType) TensorOp
 
     var sum_sq: DataType = 0;
 
-    for (v.data) |val| {
-        sum_sq += val * val;
+    // Use SIMD if there's enough data
+    if (v.data.len >= chunk_size) {
+        var partial_sums: @Vector(chunk_size, DataType) = @splat(0);
+
+        // Process chunks of 8 elements
+        const chunk_count = v.data.len / chunk_size;
+
+        for (0..chunk_count) |chunk| {
+            const offset = chunk * chunk_size;
+            const chunk_data: @Vector(chunk_size, DataType) = v.data[offset..][0..chunk_size].*;
+
+            // Square each element and accumulate
+            partial_sums += chunk_data * chunk_data;
+        }
+
+        // Sum the elements of the partial_sums vector
+        for (0..chunk_size) |j| {
+            sum_sq += partial_sums[j];
+        }
+
+        // Handle remaining elements
+        var i = chunk_count * chunk_size;
+        while (i < v.data.len) : (i += 1) {
+            sum_sq += v.data[i] * v.data[i];
+        }
+    } else {
+        // Fall back to scalar implementation
+        for (v.data) |val| {
+            sum_sq += val * val;
+        }
     }
 
     out.* = @sqrt(sum_sq);

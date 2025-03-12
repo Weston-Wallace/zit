@@ -186,7 +186,7 @@ pub fn TensorContext(comptime backend: Backend) type {
         fn elementwiseOpWithOut(op_fn: fn_types.BinaryOpFn) @TypeOf(exampleElementwiseOpWithOut) {
             return struct {
                 fn opWithOut(_: Self, a: anytype, b: @TypeOf(a), result: *@TypeOf(a)) TensorOpError!void {
-                    backend.vtable.op(backend.ptr, a, b, result, op_fn);
+                    try backend.vtable.op(backend.ptr, a, b, result, op_fn);
                 }
             }.opWithOut;
         }

@@ -2,6 +2,7 @@ const std = @import("std");
 const zit = @import("../../zit.zig");
 const Matrix = zit.Matrix;
 const TensorOpError = zit.TensorOpError;
+const chunk_size = @import("SimdBackend.zig").chunk_size;
 
 pub fn matrixMultiply(_: *anyopaque, a: anytype, b: @TypeOf(a), out: *@TypeOf(a)) TensorOpError!void {
     const T = @TypeOf(a);
@@ -23,24 +24,23 @@ pub fn matrixMultiply(_: *anyopaque, a: anytype, b: @TypeOf(a), out: *@TypeOf(a)
     const n = b.columns; // cols of result
     const k = a.columns; // common dimension same as b.rows
 
-    const chunk_size = 8;
     for (0..m) |i| {
         for (0..k) |l| {
             const a_val = a.data[i * k + l];
-            const a_val_vec: @Vector(chunk_size, f32) = @splat(a_val);
+            const a_val_vec: @Vector(chunk_size, DataType) = @splat(a_val);
 
             // Process inner loop in chunks
             const chunk_count = n / chunk_size;
 
-            var result_arr: [chunk_size]f32 = undefined;
+            var result_arr: [chunk_size]DataType = undefined;
             for (0..chunk_count) |chunk| {
                 const base_j = chunk * chunk_size;
                 const other_row_offset = l * n + base_j;
                 const result_row_offset = i * n + base_j;
 
                 // Load vectors
-                const result_vec: @Vector(chunk_size, f32) = out.data[result_row_offset..][0..chunk_size].*;
-                const other_vec: @Vector(chunk_size, f32) = b.data[other_row_offset..][0..chunk_size].*;
+                const result_vec: @Vector(chunk_size, DataType) = out.data[result_row_offset..][0..chunk_size].*;
+                const other_vec: @Vector(chunk_size, DataType) = b.data[other_row_offset..][0..chunk_size].*;
 
                 // Compute product and accumulate
                 result_arr = result_vec + (a_val_vec * other_vec);
@@ -68,13 +68,58 @@ pub fn matrixTranspose(_: *anyopaque, m: anytype, out: *@TypeOf(m)) TensorOpErro
         return TensorOpError.ShapeMismatch;
     }
 
-    // Transpose the matrix
-    for (0..m.rows) |i| {
-        for (0..m.columns) |j| {
-            const src_idx = i * m.columns + j;
-            const dst_idx = j * m.rows + i;
+    // Handle special cases
+    if (m.data.len == 0) return; // Empty matrix
+    if (m.rows == 1 and m.columns == 1) { // 1x1 matrix
+        out.data[0] = m.data[0];
+        return;
+    }
 
-            out.data[dst_idx] = m.data[src_idx];
+    // For small matrices, use the simple approach
+    if (m.rows <= 4 or m.columns <= 4) {
+        for (0..m.rows) |i| {
+            for (0..m.columns) |j| {
+                const src_idx = i * m.columns + j;
+                const dst_idx = j * m.rows + i;
+                out.data[dst_idx] = m.data[src_idx];
+            }
+        }
+        return;
+    }
+
+    // For larger matrices, use a cache-friendly blocked approach with SIMD
+    const block_size = 32; // Tune based on cache size
+
+    var bi: usize = 0;
+    while (bi < m.rows) : (bi += block_size) {
+        const i_end = @min(bi + block_size, m.rows);
+
+        var bj: usize = 0;
+        while (bj < m.columns) : (bj += block_size) {
+            const j_end = @min(bj + block_size, m.columns);
+
+            // Process this block
+            for (bi..i_end) |i| {
+                var j = bj;
+
+                // Process chunk_size elements at a time
+                while (j + chunk_size <= j_end) : (j += chunk_size) {
+                    // Load a chunk from the source matrix
+                    const src_chunk: @Vector(chunk_size, DataType) = m.data[i * m.columns + j ..][0..chunk_size].*;
+
+                    // Store to transposed positions
+                    inline for (0..chunk_size) |k| {
+                        out.data[(j + k) * m.rows + i] = src_chunk[k];
+                    }
+                }
+
+                // Handle remaining elements
+                for (j..j_end) |j2| {
+                    const src_idx = i * m.columns + j2;
+                    const dst_idx = j2 * m.rows + i;
+                    out.data[dst_idx] = m.data[src_idx];
+                }
+            }
         }
     }
 }

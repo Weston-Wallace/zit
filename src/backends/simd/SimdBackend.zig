@@ -13,6 +13,12 @@ const vector_ops = @import("vector_ops.zig");
 const matrix_vector_ops = @import("matrix_vector_ops.zig");
 const matrix_ops = @import("matrix_ops.zig");
 
+pub const chunk_size = 4;
+
+// pub fn setChunkSize(comptime c_s: usize) void {
+//     chunk_size = c_s;
+// }
+
 pub const backend = Backend{
     .ptr = @ptrFromInt(1),
     .vtable = .{

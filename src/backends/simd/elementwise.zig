@@ -8,16 +8,36 @@ const TensorError = zit.TensorError;
 const TensorOpError = zit.TensorOpError;
 const utils = @import("../utils.zig");
 const fn_types = @import("../../fn_types.zig");
+const chunk_size = @import("SimdBackend.zig").chunk_size;
 
 pub fn op(_: *anyopaque, a: anytype, b: @TypeOf(a), out: *@TypeOf(a), op_fn: fn_types.BinaryOpFn) TensorOpError!void {
     try utils.ensureEqualShape(a, b);
     try utils.ensureEqualShape(a, out.*);
 
+    const DataType = @TypeOf(a).DataType;
+
+    if (a.data.len >= chunk_size) {
+        const chunk_count = a.data.len / chunk_size;
+
+        for (0..chunk_count) |chunk| {
+            const offset = chunk * chunk_size;
+            const a_chunk: @Vector(chunk_size, DataType) = a.data[offset..][0..chunk_size].*;
+            const b_chunk: @Vector(chunk_size, DataType) = b.data[offset..][0..chunk_size].*;
+
+            out.data[offset..][0..chunk_size].* = op_fn(a_chunk, b_chunk);
+        }
+
+        var i: usize = chunk_count * chunk_size;
+        while (i < a.data.len) : (i += 1) {
+            out.data[i] = op_fn(a.data[i], b.data[i]);
+        }
+    }
     for (a.data, b.data, out.data) |a_val, b_val, *result| {
         result.* = op_fn(a_val, b_val);
     }
 }
 
+// Doesn't make sense for SIMD
 pub fn map(_: *anyopaque, a: anytype, out: *@TypeOf(a), comptime map_fn: fn_types.MapFn) TensorOpError!void {
     try utils.ensureEqualShape(a, out.*);
 
@@ -33,8 +53,33 @@ pub fn scalarMultiply(_: *anyopaque, a: anytype, scalar: anytype, out: *@TypeOf(
         @compileError("scalar must be the same type as the data type of a");
     }
 
-    for (a.data, out.data) |a_val, *result| {
-        result.* = a_val * scalar;
+    // For tensors with sufficient data, use SIMD
+    if (a.data.len >= chunk_size) {
+        const chunk_count = a.data.len / chunk_size;
+        const scalar_vec: @Vector(chunk_size, DataType) = @splat(scalar);
+
+        // Process in chunks
+        for (0..chunk_count) |chunk| {
+            const offset = chunk * chunk_size;
+            const a_chunk: @Vector(chunk_size, DataType) = a.data[offset..][0..chunk_size].*;
+
+            // Multiply by scalar
+            const result_chunk = a_chunk * scalar_vec;
+
+            // Store the result
+            out.data[offset..][0..chunk_size].* = result_chunk;
+        }
+
+        // Handle remaining elements
+        var i: usize = chunk_count * chunk_size;
+        while (i < a.data.len) : (i += 1) {
+            out.data[i] = a.data[i] * scalar;
+        }
+    } else {
+        // Fall back to scalar implementation
+        for (a.data, out.data) |a_val, *result| {
+            result.* = a_val * scalar;
+        }
     }
 }
 

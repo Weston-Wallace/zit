@@ -3,6 +3,7 @@ const zit = @import("../../zit.zig");
 const Matrix = zit.Matrix;
 const Vector = zit.Vector;
 const TensorOpError = zit.TensorOpError;
+const chunk_size = @import("SimdBackend.zig").chunk_size;
 
 pub fn matrixVectorMultiply(_: *anyopaque, m: anytype, v: anytype, out: *@TypeOf(v)) TensorOpError!void {
     const MType = @TypeOf(m);
@@ -27,11 +28,46 @@ pub fn matrixVectorMultiply(_: *anyopaque, m: anytype, v: anytype, out: *@TypeOf
 
     @memset(out.data, 0);
 
-    // Compute M * v
-    for (0..m.rows) |i| {
-        for (0..m.columns) |j| {
-            const m_idx = i * m.columns + j;
-            out.data[i] += m.data[m_idx] * v.data[j];
+    const DataType = MType.DataType;
+
+    // Use SIMD acceleration if columns are sufficient
+    if (m.columns >= chunk_size) {
+        const chunk_count = m.columns / chunk_size;
+
+        for (0..m.rows) |i| {
+            var acc: @Vector(chunk_size, DataType) = @splat(0);
+
+            // Process chunks of the row with SIMD
+            for (0..chunk_count) |chunk| {
+                const m_offset = i * m.columns + chunk * chunk_size;
+                const m_chunk: @Vector(chunk_size, DataType) = m.data[m_offset..][0..chunk_size].*;
+                const v_chunk: @Vector(chunk_size, DataType) = v.data[chunk * chunk_size ..][0..chunk_size].*;
+
+                // Multiply and accumulate
+                acc += m_chunk * v_chunk;
+            }
+
+            // Sum the accumulated values
+            var row_sum: DataType = 0;
+            for (0..chunk_size) |j| {
+                row_sum += acc[j];
+            }
+
+            // Handle remaining elements
+            var j: usize = chunk_count * chunk_size;
+            while (j < m.columns) : (j += 1) {
+                row_sum += m.data[i * m.columns + j] * v.data[j];
+            }
+
+            out.data[i] = row_sum;
+        }
+    } else {
+        // Fall back to scalar implementation
+        for (0..m.rows) |i| {
+            for (0..m.columns) |j| {
+                const m_idx = i * m.columns + j;
+                out.data[i] += m.data[m_idx] * v.data[j];
+            }
         }
     }
 }
