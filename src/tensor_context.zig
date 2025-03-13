@@ -100,6 +100,21 @@ pub fn TensorContext(comptime backend: Backend) type {
             try backend.vtable.map(backend.ptr, a, out, map_fn);
         }
 
+        pub fn scalarMultiply(self: Self, a: anytype, scalar: @TypeOf(a).DataType) TensorError!void {
+            var result = try utils.createMatchingTensor(a, self.allocator);
+            errdefer result.deinit();
+
+            try backend.vtable.scalarMultiply(backend.ptr, a, scalar, result);
+        }
+
+        pub fn scalarMultiplyInPlace(_: Self, a: anytype, scalar: std.meta.Child(@TypeOf(a)).DataType) TensorOpError!void {
+            try backend.vtable.scalarMultiply(backend.ptr, a.*, scalar, a);
+        }
+
+        pub fn scalarMultiplyWithOut(_: Self, a: anytype, scalar: @TypeOf(a).DataType, out: *@TypeOf(a)) TensorOpError!void {
+            try backend.vtable.scalarMultiply(backend.ptr, a, scalar, out);
+        }
+
         pub fn vectorDot(_: Self, a: anytype, b: @TypeOf(a)) TensorOpError!@TypeOf(a).DataType {
             var result: @TypeOf(a).DataType = undefined;
             try backend.vtable.vectorDot(backend.ptr, a, b, &result);
@@ -132,6 +147,18 @@ pub fn TensorContext(comptime backend: Backend) type {
 
         pub fn matrixMultiplyWithOut(_: Self, a: anytype, b: @TypeOf(a), out: *@TypeOf(a)) TensorOpError!void {
             try backend.vtable.matrixMultiply(backend.ptr, a, b, out);
+        }
+
+        pub fn matrixTranspose(self: Self, a: anytype) TensorError!void {
+            var result = try utils.createMatchingTensor(a, self.allocator);
+            errdefer result.deinit();
+
+            try backend.vtable.matrixTranspose(backend.ptr, a, &result);
+            return result;
+        }
+
+        pub fn matrixTransposeWithOut(_: Self, a: anytype, out: *@TypeOf(a)) TensorOpError!void {
+            try backend.vtable.matrixTranspose(backend.ptr, a, out);
         }
 
         fn addOp(x: anytype, y: @TypeOf(x)) @TypeOf(x) {

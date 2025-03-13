@@ -54,7 +54,7 @@ test matrixVectorMultiply {
     m.data[5] = 6.0;
 
     // Create and initialize a 3-element vector
-    const v = try Vector(f32).init(3, testing.allocator);
+    const v = try Vector(f32).init(m.columns, testing.allocator);
     defer v.deinit();
     v.data[0] = 7.0;
     v.data[1] = 8.0;
