@@ -1,35 +1,34 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 const zit = @import("../zit.zig");
+const TensorError = zit.TensorError;
 const Tensor = zit.Tensor;
 const Matrix = zit.Matrix;
 const Vector = zit.Vector;
-const TensorOpError = zit.TensorOpError;
-const TensorStructError = zit.TensorStructError;
 
 // Utility function to check if shapes are equal
-pub fn ensureEqualShape(a: anytype, b: @TypeOf(a)) TensorOpError!void {
+pub fn ensureEqualShape(a: anytype, b: @TypeOf(a)) TensorError!void {
     const T = @TypeOf(a);
     const DataType = T.DataType;
     if (T == Tensor(DataType)) {
         if (!std.mem.eql(usize, a.shape.items, b.shape.items)) {
-            return TensorOpError.ShapeMismatch;
+            return TensorError.ShapeMismatch;
         }
     } else if (T == Matrix(DataType)) {
         if (!(a.columns == b.columns and a.rows == b.rows)) {
-            return TensorOpError.ShapeMismatch;
+            return TensorError.ShapeMismatch;
         }
     } else if (T == Vector(DataType)) {
         if (!(a.data.len == b.data.len)) {
-            return TensorOpError.LengthMismatch;
+            return TensorError.LengthMismatch;
         }
     } else {
-        return TensorOpError.InvalidType;
+        return TensorError.InvalidType;
     }
 }
 
 // Helper function to create a matching tensor type
-pub fn createMatchingTensor(source: anytype, allocator: Allocator) TensorStructError!@TypeOf(source) {
+pub fn createMatchingTensor(source: anytype, allocator: Allocator) TensorError!@TypeOf(source) {
     const T = @TypeOf(source);
     const DataType = T.DataType;
 
@@ -60,7 +59,7 @@ test "ensureEqualShape" {
         defer t3.deinit();
 
         // Should error for different shapes
-        try testing.expectError(TensorOpError.ShapeMismatch, ensureEqualShape(t1, t3));
+        try testing.expectError(TensorError.ShapeMismatch, ensureEqualShape(t1, t3));
     }
 
     // Test with Matrices
@@ -78,7 +77,7 @@ test "ensureEqualShape" {
         defer m3.deinit();
 
         // Should error for different shapes
-        try testing.expectError(TensorOpError.ShapeMismatch, ensureEqualShape(m1, m3));
+        try testing.expectError(TensorError.ShapeMismatch, ensureEqualShape(m1, m3));
     }
 
     // Test with Vectors
@@ -96,6 +95,6 @@ test "ensureEqualShape" {
         defer v3.deinit();
 
         // Should error for different lengths
-        try testing.expectError(TensorOpError.LengthMismatch, ensureEqualShape(v1, v3));
+        try testing.expectError(TensorError.LengthMismatch, ensureEqualShape(v1, v3));
     }
 }

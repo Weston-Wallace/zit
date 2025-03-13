@@ -2,9 +2,9 @@ const std = @import("std");
 const zit = @import("../../zit.zig");
 const Matrix = zit.Matrix;
 const Vector = zit.Vector;
-const TensorOpError = zit.TensorOpError;
+const TensorError = zit.TensorError;
 
-pub fn matrixVectorMultiply(_: *anyopaque, m: anytype, v: anytype, out: *@TypeOf(v)) TensorOpError!void {
+pub fn matrixVectorMultiply(_: *anyopaque, m: anytype, v: anytype, out: *@TypeOf(v)) TensorError!void {
     const MType = @TypeOf(m);
     const VType = @TypeOf(v);
     if (MType != Matrix(MType.DataType)) {
@@ -19,10 +19,10 @@ pub fn matrixVectorMultiply(_: *anyopaque, m: anytype, v: anytype, out: *@TypeOf
 
     // Ensure matrix columns match vector length
     if (m.columns != v.data.len) {
-        return TensorOpError.ShapeMismatch;
+        return TensorError.ShapeMismatch;
     }
     if (m.rows != out.data.len) {
-        return TensorOpError.ShapeMismatch;
+        return TensorError.ShapeMismatch;
     }
 
     @memset(out.data, 0);
@@ -74,7 +74,7 @@ test matrixVectorMultiply {
     const wrong_v = try Vector(f32).init(4, testing.allocator);
     defer wrong_v.deinit();
 
-    try testing.expectError(TensorOpError.ShapeMismatch, matrixVectorMultiply(emptyCtx(), m, wrong_v, &result));
+    try testing.expectError(TensorError.ShapeMismatch, matrixVectorMultiply(emptyCtx(), m, wrong_v, &result));
 }
 
 test "shape validation" {
@@ -96,6 +96,6 @@ test "shape validation" {
     defer wrong_result.deinit();
 
     // Matrix-vector multiplication should fail (columns ≠ vector length)
-    try testing.expectError(TensorOpError.ShapeMismatch, matrixVectorMultiply(emptyCtx(), m1, wrong_v, &correct_result));
-    try testing.expectError(TensorOpError.ShapeMismatch, matrixVectorMultiply(emptyCtx(), m1, correct_v, &wrong_result));
+    try testing.expectError(TensorError.ShapeMismatch, matrixVectorMultiply(emptyCtx(), m1, wrong_v, &correct_result));
+    try testing.expectError(TensorError.ShapeMismatch, matrixVectorMultiply(emptyCtx(), m1, correct_v, &wrong_result));
 }

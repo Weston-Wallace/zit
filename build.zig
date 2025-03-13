@@ -15,6 +15,13 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     }).module("zbench");
 
+    const zmw = b.dependency("zmw", .{
+        .target = target,
+        .optimize = optimize,
+    }).module("zmw");
+
+    zit.addImport("metal", zmw);
+
     const test_step = b.step("test", "Run all tests");
 
     const unit_tests = b.addTest(.{

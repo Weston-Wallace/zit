@@ -1,9 +1,9 @@
 const std = @import("std");
 const zit = @import("../../zit.zig");
 const Vector = zit.Vector;
-const TensorOpError = zit.TensorOpError;
+const TensorError = zit.TensorError;
 
-pub fn vectorDot(_: *anyopaque, a: anytype, b: @TypeOf(a), out: *@TypeOf(a).DataType) TensorOpError!void {
+pub fn vectorDot(_: *anyopaque, a: anytype, b: @TypeOf(a), out: *@TypeOf(a).DataType) TensorError!void {
     const DataType = @TypeOf(a).DataType;
     if (@TypeOf(a) != Vector(DataType)) {
         @compileError("a and b must be Vectors");
@@ -11,7 +11,7 @@ pub fn vectorDot(_: *anyopaque, a: anytype, b: @TypeOf(a), out: *@TypeOf(a).Data
 
     // Ensure vectors have the same length
     if (a.data.len != b.data.len) {
-        return TensorOpError.LengthMismatch;
+        return TensorError.LengthMismatch;
     }
 
     var result: DataType = 0;
@@ -23,7 +23,7 @@ pub fn vectorDot(_: *anyopaque, a: anytype, b: @TypeOf(a), out: *@TypeOf(a).Data
     out.* = result;
 }
 
-pub fn vectorNorm(_: *anyopaque, v: anytype, out: *@TypeOf(v).DataType) TensorOpError!void {
+pub fn vectorNorm(_: *anyopaque, v: anytype, out: *@TypeOf(v).DataType) TensorError!void {
     const DataType = @TypeOf(v).DataType;
     if (@TypeOf(v) != Vector(DataType)) {
         @compileError("v must be a Vector");
@@ -67,7 +67,7 @@ test vectorDot {
     const v3 = try Vector(f32).init(4, testing.allocator);
     defer v3.deinit();
 
-    try testing.expectError(TensorOpError.LengthMismatch, vectorDot(emptyCtx(), v1, v3, &result));
+    try testing.expectError(TensorError.LengthMismatch, vectorDot(emptyCtx(), v1, v3, &result));
 }
 
 test vectorNorm {

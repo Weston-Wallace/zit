@@ -11,10 +11,3 @@ fn exampleMapFn(x: anytype) @TypeOf(x) {
     return x + 5;
 }
 pub const MapFn = @TypeOf(exampleMapFn);
-
-fn exampleElementwiseOp(ctx: TensorContext, a: anytype, b: @TypeOf(a)) TensorError!@TypeOf(a) {
-    _ = ctx;
-    _ = b;
-    return a;
-}
-pub const ElementwiseOpFn = @TypeOf(exampleElementwiseOp);

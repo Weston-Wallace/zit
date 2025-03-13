@@ -5,11 +5,10 @@ const Tensor = zit.Tensor;
 const Matrix = zit.Matrix;
 const Vector = zit.Vector;
 const TensorError = zit.TensorError;
-const TensorOpError = zit.TensorOpError;
 const utils = @import("../utils.zig");
 const fn_types = @import("../../fn_types.zig");
 
-pub fn op(_: *anyopaque, a: anytype, b: @TypeOf(a), out: *@TypeOf(a), op_fn: fn_types.BinaryOpFn) TensorOpError!void {
+pub fn op(_: *anyopaque, a: anytype, b: @TypeOf(a), out: *@TypeOf(a), op_fn: fn_types.BinaryOpFn) TensorError!void {
     try utils.ensureEqualShape(a, b);
     try utils.ensureEqualShape(a, out.*);
 
@@ -18,7 +17,7 @@ pub fn op(_: *anyopaque, a: anytype, b: @TypeOf(a), out: *@TypeOf(a), op_fn: fn_
     }
 }
 
-pub fn map(_: *anyopaque, a: anytype, out: *@TypeOf(a), comptime map_fn: fn_types.MapFn) TensorOpError!void {
+pub fn map(_: *anyopaque, a: anytype, out: *@TypeOf(a), comptime map_fn: fn_types.MapFn) TensorError!void {
     try utils.ensureEqualShape(a, out.*);
 
     for (a.data, out.data) |a_val, *result| {
@@ -26,7 +25,7 @@ pub fn map(_: *anyopaque, a: anytype, out: *@TypeOf(a), comptime map_fn: fn_type
     }
 }
 
-pub fn scalarMultiply(_: *anyopaque, a: anytype, scalar: anytype, out: *@TypeOf(a)) TensorOpError!void {
+pub fn scalarMultiply(_: *anyopaque, a: anytype, scalar: anytype, out: *@TypeOf(a)) TensorError!void {
     const T = @TypeOf(a);
     const DataType = T.DataType;
     if (DataType != @TypeOf(@as(DataType, scalar))) {

@@ -4,8 +4,6 @@ const zit = @import("../../zit.zig");
 const Tensor = zit.Tensor;
 const Matrix = zit.Matrix;
 const Vector = zit.Vector;
-const TensorError = zit.TensorError;
-const TensorOpError = zit.TensorOpError;
 const Backend = @import("../../backend.zig").Backend;
 
 const elementwise = @import("elementwise.zig");
@@ -14,10 +12,6 @@ const matrix_vector_ops = @import("matrix_vector_ops.zig");
 const matrix_ops = @import("matrix_ops.zig");
 
 pub const chunk_size = 16;
-
-// pub fn setChunkSize(comptime c_s: usize) void {
-//     chunk_size = c_s;
-// }
 
 pub const backend = Backend{
     .ptr = @ptrFromInt(1),

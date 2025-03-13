@@ -1,9 +1,9 @@
 const std = @import("std");
 const zit = @import("../../zit.zig");
 const Matrix = zit.Matrix;
-const TensorOpError = zit.TensorOpError;
+const TensorError = zit.TensorError;
 
-pub fn matrixMultiply(_: *anyopaque, a: anytype, b: @TypeOf(a), out: *@TypeOf(a)) TensorOpError!void {
+pub fn matrixMultiply(_: *anyopaque, a: anytype, b: @TypeOf(a), out: *@TypeOf(a)) TensorError!void {
     const T = @TypeOf(a);
     const DataType = T.DataType;
     if (T != Matrix(DataType)) {
@@ -11,10 +11,10 @@ pub fn matrixMultiply(_: *anyopaque, a: anytype, b: @TypeOf(a), out: *@TypeOf(a)
     }
 
     if (a.columns != b.rows) {
-        return TensorOpError.ShapeMismatch;
+        return TensorError.ShapeMismatch;
     }
     if (!(out.rows == a.rows and out.columns == b.columns)) {
-        return TensorOpError.ShapeMismatch;
+        return TensorError.ShapeMismatch;
     }
 
     @memset(out.data, 0);
@@ -33,14 +33,14 @@ pub fn matrixMultiply(_: *anyopaque, a: anytype, b: @TypeOf(a), out: *@TypeOf(a)
     }
 }
 
-pub fn matrixTranspose(_: *anyopaque, m: anytype, out: *@TypeOf(m)) TensorOpError!void {
+pub fn matrixTranspose(_: *anyopaque, m: anytype, out: *@TypeOf(m)) TensorError!void {
     const DataType = @TypeOf(m).DataType;
     if (@TypeOf(m) != Matrix(DataType)) {
         @compileError("m must be a Matrix");
     }
 
     if (!(out.rows == m.columns and out.columns == m.rows)) {
-        return TensorOpError.ShapeMismatch;
+        return TensorError.ShapeMismatch;
     }
 
     // Transpose the matrix
@@ -100,7 +100,7 @@ test matrixMultiply {
     const wrong_m = try Matrix(f32).init(4, 4, testing.allocator);
     defer wrong_m.deinit();
 
-    try testing.expectError(TensorOpError.ShapeMismatch, matrixMultiply(emptyCtx(), m1, wrong_m, &result));
+    try testing.expectError(TensorError.ShapeMismatch, matrixMultiply(emptyCtx(), m1, wrong_m, &result));
 }
 
 test matrixTranspose {
@@ -170,6 +170,6 @@ test "shape validation" {
     defer wrong_result.deinit();
 
     // Matrix multiplication should fail since dimensions don't align (2x3 * 4x2)
-    try testing.expectError(TensorOpError.ShapeMismatch, matrixMultiply(emptyCtx(), m1, wrong_m2, &correct_result));
-    try testing.expectError(TensorOpError.ShapeMismatch, matrixMultiply(emptyCtx(), m1, correct_m2, &wrong_result));
+    try testing.expectError(TensorError.ShapeMismatch, matrixMultiply(emptyCtx(), m1, wrong_m2, &correct_result));
+    try testing.expectError(TensorError.ShapeMismatch, matrixMultiply(emptyCtx(), m1, correct_m2, &wrong_result));
 }
