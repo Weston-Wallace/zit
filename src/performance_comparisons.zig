@@ -26,6 +26,8 @@ fn beforeAll() void {
         .v1 = Vector(DataType).splat(1000, 7, allocator) catch unreachable,
         .v_result = Vector(DataType).init(1000, allocator) catch unreachable,
         .v2 = Vector(DataType).init(1_000_000, allocator) catch unreachable,
+        .v3 = Vector(DataType).splat(100_000_000, 7, allocator) catch unreachable,
+        .v3_result = Vector(DataType).init(100_000_000, allocator) catch unreachable,
     };
 
     // Initialize Metal backend if available
@@ -43,6 +45,8 @@ fn afterAll() void {
     benchmark_data.v1.deinit();
     benchmark_data.v_result.deinit();
     benchmark_data.v2.deinit();
+    benchmark_data.v3.deinit();
+    benchmark_data.v3_result.deinit();
 
     // Clean up Metal resources
     Metal.deinit();
@@ -57,6 +61,8 @@ const BenchmarkData = struct {
     v1: Vector(DataType),
     v_result: Vector(DataType),
     v2: Vector(DataType),
+    v3: Vector(DataType),
+    v3_result: Vector(DataType),
 };
 
 pub fn MatMulBench(backend: zit.Backend) type {
@@ -99,7 +105,7 @@ pub fn ScalarMultiplyBench(backend: zit.Backend) type {
         pub const init = Self{};
 
         pub fn run(_: Self, _: std.mem.Allocator) void {
-            std.mem.doNotOptimizeAway(ctx.scalarMultiplyWithOut(benchmark_data.add_m, 7, &benchmark_data.add_result));
+            std.mem.doNotOptimizeAway(ctx.scalarMultiplyWithOut(benchmark_data.v3, 7, &benchmark_data.v3_result));
         }
     };
 }
@@ -174,33 +180,33 @@ pub fn main() !void {
     });
     defer bench.deinit();
 
-    try bench.addParam("Cpu matmul", &MatMulBench(CpuBackend.backend).init, .{});
-    try bench.addParam("Simd matmul", &MatMulBench(SimdBackend.backend).init, .{});
-    if (Metal.isAvailable()) try bench.addParam("Metal matmul", &MatMulBench(MetalBackend.backend).init, .{});
+    // try bench.addParam("Cpu matmul", &MatMulBench(CpuBackend.backend).init, .{});
+    // try bench.addParam("Simd matmul", &MatMulBench(SimdBackend.backend).init, .{});
+    // if (Metal.isAvailable()) try bench.addParam("Metal matmul", &MatMulBench(MetalBackend.backend).init, .{});
 
-    try bench.addParam("Cpu add", &AddBench(CpuBackend.backend).init, .{});
-    try bench.addParam("Simd add", &AddBench(SimdBackend.backend).init, .{});
-    if (Metal.isAvailable()) try bench.addParam("Metal add", &AddBench(MetalBackend.backend).init, .{});
+    // try bench.addParam("Cpu add", &AddBench(CpuBackend.backend).init, .{});
+    // try bench.addParam("Simd add", &AddBench(SimdBackend.backend).init, .{});
+    // if (Metal.isAvailable()) try bench.addParam("Metal add", &AddBench(MetalBackend.backend).init, .{});
 
     try bench.addParam("Cpu scalar multiply", &ScalarMultiplyBench(CpuBackend.backend).init, .{});
     try bench.addParam("Simd scalar multiply", &ScalarMultiplyBench(SimdBackend.backend).init, .{});
     if (Metal.isAvailable()) try bench.addParam("Metal scalar multiply", &ScalarMultiplyBench(MetalBackend.backend).init, .{});
 
-    try bench.addParam("Cpu transpose", &TransposeBench(CpuBackend.backend).init, .{});
-    try bench.addParam("Simd transpose", &TransposeBench(SimdBackend.backend).init, .{});
-    if (Metal.isAvailable()) try bench.addParam("Metal transpose", &TransposeBench(MetalBackend.backend).init, .{});
+    // try bench.addParam("Cpu transpose", &TransposeBench(CpuBackend.backend).init, .{});
+    // try bench.addParam("Simd transpose", &TransposeBench(SimdBackend.backend).init, .{});
+    // if (Metal.isAvailable()) try bench.addParam("Metal transpose", &TransposeBench(MetalBackend.backend).init, .{});
 
-    try bench.addParam("Cpu matrix vector multiply", &MVMulBench(CpuBackend.backend).init, .{});
-    try bench.addParam("Simd matrix vector multiply", &MVMulBench(SimdBackend.backend).init, .{});
-    if (Metal.isAvailable()) try bench.addParam("Metal matrix vector multiply", &MVMulBench(MetalBackend.backend).init, .{});
+    // try bench.addParam("Cpu matrix vector multiply", &MVMulBench(CpuBackend.backend).init, .{});
+    // try bench.addParam("Simd matrix vector multiply", &MVMulBench(SimdBackend.backend).init, .{});
+    // if (Metal.isAvailable()) try bench.addParam("Metal matrix vector multiply", &MVMulBench(MetalBackend.backend).init, .{});
 
-    try bench.addParam("Cpu dot", &DotBench(CpuBackend.backend).init, .{});
-    try bench.addParam("Simd dot", &DotBench(SimdBackend.backend).init, .{});
-    if (Metal.isAvailable()) try bench.addParam("Metal dot", &DotBench(MetalBackend.backend).init, .{});
+    // try bench.addParam("Cpu dot", &DotBench(CpuBackend.backend).init, .{});
+    // try bench.addParam("Simd dot", &DotBench(SimdBackend.backend).init, .{});
+    // if (Metal.isAvailable()) try bench.addParam("Metal dot", &DotBench(MetalBackend.backend).init, .{});
 
-    try bench.addParam("Cpu norm", &NormBench(CpuBackend.backend).init, .{});
-    try bench.addParam("Simd norm", &NormBench(SimdBackend.backend).init, .{});
-    if (Metal.isAvailable()) try bench.addParam("Metal norm", &NormBench(MetalBackend.backend).init, .{});
+    // try bench.addParam("Cpu norm", &NormBench(CpuBackend.backend).init, .{});
+    // try bench.addParam("Simd norm", &NormBench(SimdBackend.backend).init, .{});
+    // if (Metal.isAvailable()) try bench.addParam("Metal norm", &NormBench(MetalBackend.backend).init, .{});
 
     try stdout.writeAll("\n");
     try bench.run(stdout);

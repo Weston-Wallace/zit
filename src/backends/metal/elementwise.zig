@@ -172,25 +172,25 @@ pub fn scalarMultiply(_: *anyopaque, a: anytype, scalar: anytype, out: *@TypeOf(
         return;
     }
 
-    // Create Metal buffers
+    // Get buffers from pool instead of creating new ones
     const element_size = @sizeOf(DataType);
     const data_size = a.data.len * element_size;
 
-    var buffer_a = try ctx.device.createBuffer(data_size, .Shared);
-    defer buffer_a.deinit();
+    // OPTIMIZATION: Use buffer pool instead of creating new buffers
+    var buffer_a = try ctx.buffer_pool.getBuffer(data_size, .Shared);
+    defer ctx.buffer_pool.returnBuffer(buffer_a) catch {};
 
-    var buffer_scalar = try ctx.device.createBuffer(element_size, .Shared);
-    defer buffer_scalar.deinit();
-
-    var buffer_result = try ctx.device.createBuffer(data_size, .Shared);
-    defer buffer_result.deinit();
+    var buffer_result = try ctx.buffer_pool.getBuffer(data_size, .Shared);
+    defer ctx.buffer_pool.returnBuffer(buffer_result) catch {};
 
     // Copy data to Metal buffers
-    try buffer_a.copyFromSlice(std.mem.sliceAsBytes(a.data));
-
-    // Copy scalar to buffer
-    const scalar_slice = buffer_scalar.getContentsSlice() orelse return TensorError.BackendError;
-    @memcpy(scalar_slice, std.mem.asBytes(&scalar));
+    buffer_a.copyFromSlice(std.mem.sliceAsBytes(a.data)) catch |err| {
+        // If copy fails, fall back to CPU implementation
+        for (a.data, 0..) |value, i| {
+            out.data[i] = value * scalar;
+        }
+        return err;
+    };
 
     // Create command buffer and encoder
     var command_buffer = try ctx.command_queue.createCommandBuffer();
@@ -201,9 +201,12 @@ pub fn scalarMultiply(_: *anyopaque, a: anytype, scalar: anytype, out: *@TypeOf(
 
     // Set up compute command
     encoder.setComputePipelineState(ctx.scalar_multiply_pipeline);
-    encoder.setBuffer(buffer_a, 0, 0);
-    encoder.setBuffer(buffer_scalar, 0, 1);
-    encoder.setBuffer(buffer_result, 0, 2);
+    encoder.setBuffer(buffer_a.*, 0, 0);
+    encoder.setBuffer(buffer_result.*, 0, 1);
+
+    // OPTIMIZATION: Pass scalar as a constant instead of a buffer
+    const scalar_bytes = std.mem.asBytes(&scalar);
+    encoder.setBytes(scalar_bytes.ptr, scalar_bytes.len, 2);
 
     // Dispatch threads - one thread per element
     encoder.dispatchThreads(@intCast(a.data.len), 1, 1);
@@ -214,6 +217,6 @@ pub fn scalarMultiply(_: *anyopaque, a: anytype, scalar: anytype, out: *@TypeOf(
     command_buffer.waitUntilCompleted();
 
     // Copy result back to output tensor
-    const result_slice = buffer_result.getContentsSlice() orelse return TensorError.BackendError;
-    @memcpy(std.mem.sliceAsBytes(out.data), result_slice);
+    const result_bytes = buffer_result.getContentsSlice() orelse return TensorError.BackendError;
+    @memcpy(std.mem.sliceAsBytes(out.data), result_bytes[0..data_size]);
 }

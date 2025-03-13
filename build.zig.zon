@@ -4,8 +4,8 @@
     .version = "0.0.0",
     .dependencies = .{
         .zmw = .{
-            .url = "git+https://github.com/Weston-Wallace/zmw#15ff40371d1f04daa80748e426c6db8de1b650e5",
-            .hash = "zmw-0.1.1-WTH98EwGAQAj3m9wC8BvWKriYT7euLw9tYJbUtrzNXGD",
+            .url = "git+https://github.com/Weston-Wallace/zmw#bc3a9f8f4545eea03d22ecca5952ce1bfc91686c",
+            .hash = "zmw-0.1.1-WTH98FcpAQCaFEGtg8CdyPqHNfZWFjAWE81d6aBl9cro",
         },
         .zbench = .{
             .url = "git+https://github.com/hendriknielaender/zBench#fb3c3bb04070b6d7fcc0b9a27d6e89d45b1141c6",

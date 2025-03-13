@@ -4,6 +4,7 @@ const metal = @import("metal");
 const zit = @import("../../zit.zig");
 const TensorError = zit.TensorError;
 const shaders = @import("shaders.zig");
+const BufferPool = @import("BufferPool.zig");
 
 // Global context for the Metal backend
 var context: ?MetalContext = null;
@@ -13,6 +14,7 @@ pub const MetalContext = struct {
     allocator: Allocator,
     device: metal.Device,
     command_queue: metal.CommandQueue,
+    buffer_pool: BufferPool,
 
     // Shader libraries
     elementwise_lib: metal.Library,
@@ -39,10 +41,14 @@ pub const MetalContext = struct {
         var command_queue = try device.createCommandQueue();
         errdefer command_queue.deinit();
 
+        var buffer_pool = BufferPool.init(device, allocator);
+        errdefer buffer_pool.deinit();
+
         var ctx = MetalContext{
             .allocator = allocator,
             .device = device,
             .command_queue = command_queue,
+            .buffer_pool = buffer_pool,
             // These will be initialized in setupPipelines
             .elementwise_lib = undefined,
             .vector_ops_lib = undefined,
@@ -147,6 +153,9 @@ pub const MetalContext = struct {
         self.matrix_vector_lib.deinit();
         self.matrix_lib.deinit();
 
+        // Release the buffer pool
+        self.buffer_pool.deinit();
+
         // Release command queue and device
         self.command_queue.deinit();
         self.device.deinit();
@@ -189,9 +198,8 @@ pub fn deinit() void {
     }
 }
 
+pub const metal_tests = @import("metal_tests.zig");
+
 test {
-    const device = metal.Device.createDefault();
-    const name = try device.getCName();
-    defer metal.freeCString(name);
-    std.debug.print("name: {s}\n", .{name});
+    std.testing.refAllDecls(@This());
 }

@@ -41,11 +41,11 @@ pub const elementwise_shader =
     \\
     \\kernel void scalar_multiply(
     \\    device const float* a [[buffer(0)]],
-    \\    device const float* scalar [[buffer(1)]],
-    \\    device float* result [[buffer(2)]],
+    \\    device float* result [[buffer(1)]],
+    \\    constant float& scalar [[buffer(2)]],
     \\    uint id [[thread_position_in_grid]])
     \\{
-    \\    result[id] = a[id] * scalar[0];
+    \\    result[id] = a[id] * scalar;
     \\}
 ;
 

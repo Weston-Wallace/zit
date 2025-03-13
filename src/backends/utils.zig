@@ -41,6 +41,31 @@ pub fn createMatchingTensor(source: anytype, allocator: Allocator) TensorError!@
     }
 }
 
+/// Returns the next power of 2 greater than or equal to n.
+/// If n is already a power of 2, returns n.
+/// If the next power of 2 would overflow the type, returns the maximum value representable by the type.
+pub fn nextPowerOf2(n: anytype) @TypeOf(n) {
+    // Get the bit width of the type
+    const T = @TypeOf(n);
+    const bit_count = @typeInfo(T).int.bits;
+    const max_value = std.math.maxInt(T);
+
+    if (n == 0) return 1;
+
+    // Check if n is already a power of 2
+    if ((n & (n - 1)) == 0) return n;
+
+    // Find position of highest bit
+    const highest_bit = bit_count - @clz(n);
+
+    // Check if shifting would cause an overflow
+    if (highest_bit >= bit_count) return max_value;
+
+    const result = @as(T, 1) << @intCast(highest_bit);
+
+    return result;
+}
+
 const testing = std.testing;
 
 test "ensureEqualShape" {
@@ -97,4 +122,11 @@ test "ensureEqualShape" {
         // Should error for different lengths
         try testing.expectError(TensorError.LengthMismatch, ensureEqualShape(v1, v3));
     }
+}
+
+test nextPowerOf2 {
+    try testing.expectEqual(1, nextPowerOf2(@as(i8, 1)));
+    try testing.expectEqual(4, nextPowerOf2(@as(i7, 3)));
+    try testing.expectEqual(8, nextPowerOf2(@as(i16, 6)));
+    try testing.expectEqual(16, nextPowerOf2(@as(i10, 11)));
 }

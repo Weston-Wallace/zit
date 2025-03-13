@@ -4,6 +4,7 @@ const Vector = zit.Vector;
 const TensorError = zit.TensorError;
 const metal = @import("metal");
 const metal_context = @import("metal_context.zig");
+const utils = @import("../utils.zig");
 
 pub fn vectorDot(_: *anyopaque, a: anytype, b: @TypeOf(a), out: *@TypeOf(a).DataType) !void {
     const DataType = @TypeOf(a).DataType;
@@ -86,7 +87,7 @@ pub fn vectorDot(_: *anyopaque, a: anytype, b: @TypeOf(a), out: *@TypeOf(a).Data
 
     // Use 32 threads per threadgroup for the reduction
     const threadgroup_size: u32 = 32;
-    const grid_size: u32 = @min(threadgroup_size, length);
+    const grid_size: u32 = utils.nextPowerOf2(@min(threadgroup_size, length));
 
     encoder.dispatchThreads(grid_size, 1, 1);
     encoder.endEncoding();
